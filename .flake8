@@ -1,0 +1,48 @@
+[flake8]
+exclude =
+    .git,
+    __pycache__,
+    docs,
+    img,
+    notebooks,
+    reports,
+    .venv,
+    venv,
+    .ipynb,
+    .md,
+    .txt,
+    .tox,
+    *.egg,
+    *.egg-info
+
+max-line-complexity = 15
+max-cognitive-score = 16
+max_line_length = 120
+max-local-variables = 25
+max-arguments=10
+
+
+ignore =
+    # because f-strings are useful
+    WPS305,
+    # because nobody wants to write docstrings everywhere
+    D100, D101, D102, D103, D104, D105, D107
+    # too many imports
+    WPS235
+
+# per-file-ignores =
+
+
+[darglint]
+docstring_style=numpy
+
+
+[isort]
+# isort configuration:
+# https://github.com/timothycrosley/isort/wiki/isort-Settings
+include_trailing_comma = true
+use_parentheses = true
+# See https://github.com/timothycrosley/isort#multi-line-output-modes
+multi_line_output = 3
+# Is the same as 80 in flake8:
+line_length = 120
