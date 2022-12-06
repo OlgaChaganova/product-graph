@@ -32,7 +32,7 @@ CONFIG = Config(
     model=Model(
         module=MLPModule,
         model_params={
-            'num_neurons': [100, 256, 512, 512, 256],
+            'num_neurons': [100, 256, 256, 256],
             'num_classes': 47,
             'dropout': 0.15,
         },
@@ -47,7 +47,7 @@ CONFIG = Config(
             'gradient_clip_val': 0.0,
             'benchmark': True,
             'precision': 32,
-            'max_epochs': 70,
+            'max_epochs': 135,
             'auto_lr_find': None,
         },
 
@@ -73,7 +73,7 @@ CONFIG = Config(
         lr_scheduler=LRScheduler(
             name='CosineAnnealingWarmRestarts',
             lr_sched_params={
-                'T_0': 70,
+                'T_0': 120,
                 'T_mult': 1,
                 'eta_min': 0.00001,
             },

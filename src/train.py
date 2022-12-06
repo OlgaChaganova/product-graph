@@ -5,6 +5,7 @@ import typing as tp
 from runpy import run_path
 
 import pytorch_lightning as pl
+import wandb
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.callbacks import RichModelSummary
 from pytorch_lightning.callbacks.progress import TQDMProgressBar
@@ -60,6 +61,8 @@ def main(args: tp.Any, config: Config):
 
     # logger
     logger = get_wandb_logger(model, datamodule, config)
+    base_path = os.path.split(args.config)[0]
+    wandb.save(args.config, base_path=base_path, policy='now')
 
     # trainer
     trainer_params = config.train.trainer_params
