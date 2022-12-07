@@ -1,17 +1,22 @@
 import logging
 import typing as tp
 
+import torch
 import pytorch_lightning as pl
 from ogb.nodeproppred import PygNodePropPredDataset
-from torch_geometric.data import DataLoader
+from torch_geometric.data import ClusterData, ClusterLoader, NeighborSampler
 
 
 class OGBGProductsDatamodule(pl.LightningDataModule):
+    """DataModule for mini-batch GCN training using the Cluster-GCN algorithm."""
+    
     def __init__(
         self,
         root: str,
         batch_size: int,
         num_workers: int,
+        save_dir: tp.Optional[str],
+        num_partitions: int = 15000,
     ):
         """
         Create Data Module for OGBG Product task.
@@ -24,13 +29,40 @@ class OGBGProductsDatamodule(pl.LightningDataModule):
             Batch size for dataloaders.
         num_workers : int
             Number of workers in dataloaders.
+        save_dir : tp.Optional[str]
+            Directory where already partitioned dataset is stored.
+        num_partitions : int
+            Number of partitions.
         """
         super().__init__()
         self.save_hyperparameters()
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.dataset = PygNodePropPredDataset(name='ogbn-products', root=root)
-        self.split_idx = self.dataset.get_idx_split()
+        self.root = root
+        self.num_partitions = num_partitions
+        self.save_dir = save_dir
+
+        self.data = None
+        self.split_idx = None
+        self.cluster_data = None
+    
+    def prepare_data(self):
+        dataset = PygNodePropPredDataset(name='ogbn-products', root=self.root)
+        self.split_idx = dataset.get_idx_split()
+        self.data = dataset[0]
+
+        # Convert split indices to boolean masks and add them to `data`.
+        for key, idx in self.split_idx.items():
+            mask = torch.zeros(self.data.num_nodes, dtype=torch.bool)
+            mask[idx] = True
+            self.data[f'{key}_mask'] = mask
+
+        self.cluster_data = ClusterData(
+            self.data,
+            num_parts=self.num_partitions,
+            recursive=False,
+            save_dir=self.save_dir,
+        )
 
     def setup(self, stage: tp.Optional[str] = None):
         if stage == 'fit' or stage is None:
@@ -48,28 +80,26 @@ class OGBGProductsDatamodule(pl.LightningDataModule):
             logging.info(f'Mode: test, number of files: {num_test_files}')
 
     def train_dataloader(self):
-        return DataLoader(
-            self.dataset[self.train_split],
+        return ClusterLoader(
+            self.cluster_data,
             batch_size=self.batch_size,
-            num_workers=self.num_workers,
             shuffle=True,
-            drop_last=True,
+            num_workers=self.num_workers,
         )
 
     def val_dataloader(self):
-        return DataLoader(
-            self.dataset[self.valid_split],
+        return ClusterLoader(
+            self.cluster_data,
             batch_size=self.batch_size,
-            num_workers=self.num_workers,
             shuffle=False,
-            drop_last=False,
+            num_workers=self.num_workers,
         )
 
     def test_dataloader(self):
-        return DataLoader(
-            self.dataset[self.test_split],
+        return NeighborSampler(
+            self.data.edge_index,
+            sizes=[-1],
             batch_size=self.batch_size,
-            num_workers=self.num_workers,
             shuffle=False,
-            drop_last=False,
+            num_workers=self.num_workers,
         )
