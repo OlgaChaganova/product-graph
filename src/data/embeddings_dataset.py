@@ -22,8 +22,8 @@ class EmbeddingsDataset(Dataset):
         dataset = PygNodePropPredDataset(name='ogbn-products', root=self.root)
         graph = dataset[0]
         indices = dataset.get_idx_split()[mode]
-        embeddings = graph._store['x'][indices]
-        targets = graph._store['y'][indices]
+        embeddings = graph.x[indices]
+        targets = graph.y[indices]
         return embeddings, targets
 
     def __len__(self):
