@@ -5,10 +5,10 @@ import pytorch_lightning as pl
 
 from configs.base import (Callbacks, Common, Config, Dataset, LRScheduler,
                           Model, Optimizer, Project, Train)
-from data.embeddings_dataset import EmbeddingsDataModule
-from models.mlp import MLPModule
+from data.graph_dataset import OGBGProductsDatamodule
+from models.gcn import GCNModule
 
-RUN_NAME = 'gcn_baseline_' + uuid.uuid4().hex[:6]  # unique run id
+RUN_NAME = 'gcn_' + uuid.uuid4().hex[:6]  # unique run id
 
 
 CONFIG = Config(
@@ -23,16 +23,16 @@ CONFIG = Config(
     common=Common(seed=8),
 
     dataset=Dataset(
-        module=EmbeddingsDataModule,
+        module=OGBGProductsDatamodule,
         root='data/',
         batch_size=512,
         num_workers=6,
     ),
 
     model=Model(
-        module=MLPModule,
+        module=GCNModule,
         model_params={
-            'num_num_features': [100, 256, 256, 256],
+            'num_features': [100, 256, 256, 256],
             'num_classes': 47,
             'dropout': 0.15,
         },
@@ -47,7 +47,7 @@ CONFIG = Config(
             'gradient_clip_val': 0.0,
             'benchmark': True,
             'precision': 32,
-            'max_epochs': 135,
+            'max_epochs': 20,
             'auto_lr_find': None,
         },
 

@@ -15,7 +15,7 @@ class OGBGProductsDatamodule(pl.LightningDataModule):
         root: str,
         batch_size: int,
         num_workers: int,
-        save_dir: tp.Optional[str],
+        save_dir: tp.Optional[str] = 'data/ogbn_products/processed',
         num_partitions: int = 15000,
     ):
         """
@@ -51,7 +51,7 @@ class OGBGProductsDatamodule(pl.LightningDataModule):
         self.split_idx = dataset.get_idx_split()
         self.data = dataset[0]
 
-        # Convert split indices to boolean masks and add them to `data`.
+        # Convert split indices to boolean masks and add them to `data`
         for key, idx in self.split_idx.items():
             mask = torch.zeros(self.data.num_nodes, dtype=torch.bool)
             mask[idx] = True
@@ -68,16 +68,16 @@ class OGBGProductsDatamodule(pl.LightningDataModule):
         if stage == 'fit' or stage is None:
             self.train_split = self.split_idx['train']
             num_train_files = len(self.train_split)
-            logging.info(f'Mode: train, number of files: {num_train_files}')
+            logging.info(f'Mode: train, number of nodes: {num_train_files}')
 
             self.valid_split = self.split_idx['valid']
             num_valid_files = len(self.valid_split)
-            logging.info(f'Mode: valid, number of files: {num_valid_files}')
+            logging.info(f'Mode: valid, number of nodes: {num_valid_files}')
 
         elif stage == 'test':
             self.test_split = self.split_idx['test']
             num_test_files = len(self.test_split)
-            logging.info(f'Mode: test, number of files: {num_test_files}')
+            logging.info(f'Mode: test, number of nodes: {num_test_files}')
 
     def train_dataloader(self):
         return ClusterLoader(

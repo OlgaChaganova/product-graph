@@ -3,6 +3,9 @@
 
 [ogbn-products task](https://ogb.stanford.edu/docs/nodeprop/#ogbn-products) solution.
 
+Written using PytorchLighthing & PytorchGeometric & Weights&Biases for experiment tracking.
+
+
 
 ## Task description
 
@@ -15,10 +18,19 @@
 
 ## Instructures
 
-1. Setup environment (python 3.10):
+1. Setup environment (python >=3.10):
 
 ```
 pip install -r requirements.txt
+pip install -U rich
+
+```
+
+Special instructures for pytorch geometric, see here: https://github.com/pyg-team/pytorch_geometric:
+```
+pip install pyg-lib torch-scatter torch-sparse -f https://data.pyg.org/whl/torch-1.13.0+cu116.html
+pip install torch-geometric
+
 ```
 
 2. Start training (all hyperparameters must be specified in configuration file (e.g. `src/configs/config.py`)):
@@ -39,4 +51,14 @@ python src/train.py --config <path_to_config>
 
 Without using any information of the graph structure we can achieve 64.4% accuracy of predictions.
 
-Config: `src/configs/mlp_config.py`
+Config: `src/configs/config_mlp.py`
+
+
+### 2. Graph Convolutional Network
+
+Graph Convolutional Network (169k parameters). Scores:
+
+TBA
+
+
+Config: `src/configs/config_gcn.py`

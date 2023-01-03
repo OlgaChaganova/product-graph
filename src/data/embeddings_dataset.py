@@ -67,14 +67,14 @@ class EmbeddingsDataModule(pl.LightningDataModule):
                 mode='train',
             )
             num_train_files = len(self.train_dataset)
-            logging.info(f'Mode: train, number of files: {num_train_files}')
+            logging.info(f'Mode: train, number of nodes: {num_train_files}')
 
             self.val_dataset = EmbeddingsDataset(
                 root=self.root,
                 mode='valid',
             )
             num_val_files = len(self.val_dataset)
-            logging.info(f'Mode: val, number of files: {num_val_files}')
+            logging.info(f'Mode: val, number of nodes: {num_val_files}')
 
         elif stage == 'test':
             self.test_dataset = EmbeddingsDataset(
@@ -82,7 +82,7 @@ class EmbeddingsDataModule(pl.LightningDataModule):
                 mode='test',
             )
             num_test_files = len(self.test_dataset)
-            logging.info(f'Mode: test, number of files: {num_test_files}')
+            logging.info(f'Mode: test, number of nodes: {num_test_files}')
 
     def train_dataloader(self):
         return DataLoader(
