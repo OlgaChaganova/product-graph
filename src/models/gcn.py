@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.data import NeighborSampler
-from torch_geometric.nn import GCNConv
+from torch_geometric.nn import SAGEConv
 from torchmetrics import Accuracy, F1Score, Precision, Recall
 from tqdm import tqdm
 
@@ -39,10 +39,10 @@ class GraphConvNetwork(nn.Module):
         num_layers = len(num_features)
         for i in range(num_layers - 1):
             self.layers.append(
-                GCNConv(in_channels=num_features[i], out_channels=num_features[i + 1]),
+                SAGEConv(in_channels=num_features[i], out_channels=num_features[i + 1]),
             )
         self.layers.append(
-            GCNConv(in_channels=num_features[-1], out_channels=num_classes),
+            SAGEConv(in_channels=num_features[-1], out_channels=num_classes),
         )
         self.dropout = dropout
 
@@ -54,8 +54,6 @@ class GraphConvNetwork(nn.Module):
         return torch.log_softmax(x, dim=-1)
 
     def inference(self, x_all: torch.tensor, subgraph_loader: NeighborSampler) -> torch.tensor:
-        pbar = tqdm(total=x_all.size(0) * len(self.layers))
-        pbar.set_description('Inference')
         for i, conv in enumerate(self.layers):
             xs = []
             for batch_size, n_id, adj in subgraph_loader:
@@ -70,6 +68,17 @@ class GraphConvNetwork(nn.Module):
             x_all = torch.cat(xs, dim=0)
         pbar.close()
         return x_all
+    
+    def inference_step(self, subgraph_loader_batch: tp.Tuple, x_all: torch.tensor) -> torch.tensor:
+        batch_size, n_id, adj = subgraph_loader_batch
+        for i, conv in enumerate(self.layers):
+                edge_index, _, size = adj
+                x = x_all[n_id]
+                x_target = x[:size[1]]
+                x = conv((x, x_target), edge_index)
+                if i != len(self.layers) - 1:
+                    x = F.relu(x)
+        return x
 
 
 class GCNModule(pl.LightningModule):
@@ -114,62 +123,68 @@ class GCNModule(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         targets = batch.y.squeeze(1)[batch.train_mask]
         probs = self.forward(batch.x, batch.edge_index)[batch.train_mask]
+        batch_size = len(targets)
 
         loss = self.criterion(probs, targets)
-        self.log('train_loss', loss, on_epoch=False, on_step=True)
+        self.log('train_loss', loss, on_epoch=False, on_step=True, batch_size=batch_size)
 
         self.accuracy(probs, targets.long())
-        self.log('train_acc', self.accuracy, on_epoch=False, on_step=True)
+        self.log('train_acc', self.accuracy, on_epoch=False, on_step=True, batch_size=batch_size)
 
         self.f1_score(probs, targets.long())
-        self.log('train_f1', self.f1_score, on_epoch=False, on_step=True)
+        self.log('train_f1', self.f1_score, on_epoch=False, on_step=True, batch_size=batch_size)
 
         self.precision_score(probs, targets.long())
-        self.log('train_precision', self.precision_score, on_epoch=False, on_step=True)
+        self.log('train_precision', self.precision_score, on_epoch=False, on_step=True, batch_size=batch_size)
 
         self.recall_score(probs, targets.long())
-        self.log('train_recall_score', self.recall_score, on_epoch=False, on_step=True)
+        self.log('train_recall_score', self.recall_score, on_epoch=False, on_step=True, batch_size=batch_size)
         return loss
 
     def validation_step(self, batch, batch_idx):
         targets = batch.y.squeeze(1)[batch.valid_mask]
         probs = self.forward(batch.x, batch.edge_index)[batch.valid_mask]
+        batch_size = len(targets)
 
         loss = self.criterion(probs, targets)
-        self.log('val_loss', loss, on_epoch=True, on_step=True)
+        self.log('val_loss', loss, on_epoch=True, on_step=True, batch_size=batch_size)
 
         self.accuracy(probs, targets.long())
-        self.log('val_acc', self.accuracy, on_epoch=True, on_step=False)
+        self.log('val_acc', self.accuracy, on_epoch=True, on_step=False, batch_size=batch_size)
 
         self.f1_score(probs, targets.long())
-        self.log('val_f1', self.f1_score, on_epoch=True, on_step=False)
+        self.log('val_f1', self.f1_score, on_epoch=True, on_step=False, batch_size=batch_size)
 
         self.precision_score(probs, targets.long())
-        self.log('val_precision', self.precision_score, on_epoch=True, on_step=False)
+        self.log('val_precision', self.precision_score, on_epoch=True, on_step=False, batch_size=batch_size)
 
         self.recall_score(probs, targets.long())
-        self.log('val_recall_score', self.recall_score, on_epoch=True, on_step=False)
+        self.log('val_recall_score', self.recall_score, on_epoch=True, on_step=False, batch_size=batch_size)
         return loss
 
     def test_step(self, batch, batch_idx):
         targets = batch.y.squeeze(1)[batch.test_mask]
-        probs = self.forward(batch.x, batch.edge_index)[batch.test_mask]
+        return self.model.inference_step(batch, self.trainer.datamodule.data)
+        # batch_size = len(targets)
 
-        loss = self.criterion(probs, targets)
-        self.log('test_loss', loss)
+        # loss = self.criterion(probs, targets)
+        # self.log('test_loss', loss, batch_size=batch_size)
 
-        self.accuracy(probs, targets.long())
-        self.log('test_acc', self.accuracy)
+        # self.accuracy(probs, targets.long())
+        # self.log('test_acc', self.accuracy, batch_size=batch_size)
 
-        self.f1_score(probs, targets.long())
-        self.log('test_f1', self.f1_score)
+        # self.f1_score(probs, targets.long())
+        # self.log('test_f1', self.f1_score, batch_size=batch_size)
 
-        self.precision_score(probs, targets.long())
-        self.log('test_precision', self.precision_score)
+        # self.precision_score(probs, targets.long())
+        # self.log('test_precision', self.precision_score, batch_size=batch_size)
 
-        self.recall_score(probs, targets.long())
-        self.log('test_recall_score', self.recall_score)
-        return loss
+        # self.recall_score(probs, targets.long())
+        # self.log('test_recall_score', self.recall_score, batch_size=batch_size)
+        return probs
+    
+    def on_test_end(self):
+
 
     def configure_optimizers(self):
         optimizer = getattr(torch.optim, self.optimizer.name)(
