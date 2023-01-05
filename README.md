@@ -33,7 +33,13 @@ pip install torch-geometric
 
 ```
 
-2. Start training (all hyperparameters must be specified in configuration file (e.g. `src/configs/config.py`)):
+2. Download dataset:
+
+```
+python src/data/download.py
+```
+
+3. Start training (all hyperparameters must be specified in configuration file (e.g. `src/configs/config.py`)):
 
 ```
 python src/train.py --config <path_to_config>
@@ -42,10 +48,18 @@ python src/train.py --config <path_to_config>
 
 ## Solutions
 
+### 0. EDA
+
+See [here](notebooks/eda.ipynb).
+
 
 ### 1. Baseline
 
- Multi-layer perceptron trained only on vertices embeddings (169k parameters). Scores:
+Multi-layer perceptron trained only on vertices embeddings (169k parameters).
+
+This solution does not take into account any information about relations between vertices so there is no graph-specific approaches are used. We can even consider this baseline as NLP task because vertices embeddings were extracted with BOW-method.
+
+Scores:
 
 ![mlp_metrics](images/mlp-metrics.png)
 
