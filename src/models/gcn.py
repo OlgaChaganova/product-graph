@@ -70,7 +70,11 @@ class GraphConvNetwork(nn.Module):
         return x_all
     
     def inference_step(self, subgraph_loader_batch: tp.Tuple, x_all: torch.tensor) -> torch.tensor:
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         batch_size, n_id, adj = subgraph_loader_batch
+        n_id = n_id.to(device)
+        adj = adj.to(device)
+        x_all = x_all.to(device)
         for i, conv in enumerate(self.layers):
                 edge_index, _, size = adj
                 x = x_all[n_id]
@@ -163,8 +167,11 @@ class GCNModule(pl.LightningModule):
         return loss
 
     def test_step(self, batch, batch_idx):
-        targets = batch.y.squeeze(1)[batch.test_mask]
-        return self.model.inference_step(batch, self.trainer.datamodule.data)
+        # targets = batch.y.squeeze(1)[batch.test_mask]
+        # print('!!!', batch)
+        # print('!!!!', self.trainer.datamodule.data)
+        probs = self.model.inference_step(batch, self.trainer.datamodule.data.x)
+        print(probs.shape)
         # batch_size = len(targets)
 
         # loss = self.criterion(probs, targets)
@@ -181,10 +188,6 @@ class GCNModule(pl.LightningModule):
 
         # self.recall_score(probs, targets.long())
         # self.log('test_recall_score', self.recall_score, batch_size=batch_size)
-        return probs
-    
-    def on_test_end(self):
-
 
     def configure_optimizers(self):
         optimizer = getattr(torch.optim, self.optimizer.name)(
