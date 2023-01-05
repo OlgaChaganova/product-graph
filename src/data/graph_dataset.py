@@ -4,7 +4,7 @@ import typing as tp
 import torch
 import pytorch_lightning as pl
 from ogb.nodeproppred import PygNodePropPredDataset
-from torch_geometric.data import ClusterData, ClusterLoader, NeighborSampler
+from torch_geometric.loader import ClusterLoader, ClusterData, NeighborSampler
 
 
 class OGBGProductsDatamodule(pl.LightningDataModule):
