@@ -93,9 +93,10 @@ We use mini-batch training because the whole graph is quite large, so full-batch
 
 Scores:
 
-TBA
+![gcn_metrics](images/gcn-metrics.png)
 
-We significantly increase the accuracy of prediction on test set comparing to baseline using graph neural networks. Consequently, the relationship between objects can store very useful information for further research of their properties. 
+
+We significantly increase (+14.2%) the accuracy of prediction on test set comparing to baseline using graph neural networks. Consequently, the relationship between objects can store very useful information for further research of their properties. 
 
 
 Config: `src/configs/config_gcn.py`
