@@ -1,3 +1,4 @@
+import logging
 import typing as tp
 
 import pytorch_lightning as pl
@@ -55,8 +56,9 @@ class GraphConvNetwork(nn.Module):
 
     def inference(self, x_all: torch.tensor, subgraph_loader: NeighborSampler) -> torch.tensor:
         for i, conv in enumerate(self.layers):
+            conv = conv.cpu()
             xs = []
-            for batch_size, n_id, adj in subgraph_loader:
+            for batch_size, n_id, adj in tqdm(subgraph_loader):
                 edge_index, _, size = adj
                 x = x_all[n_id]
                 x_target = x[:size[1]]
@@ -64,25 +66,8 @@ class GraphConvNetwork(nn.Module):
                 if i != len(self.layers) - 1:
                     x = F.relu(x)
                 xs.append(x.cpu())
-                pbar.update(batch_size)
             x_all = torch.cat(xs, dim=0)
-        pbar.close()
         return x_all
-    
-    def inference_step(self, subgraph_loader_batch: tp.Tuple, x_all: torch.tensor) -> torch.tensor:
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        batch_size, n_id, adj = subgraph_loader_batch
-        n_id = n_id.to(device)
-        adj = adj.to(device)
-        x_all = x_all.to(device)
-        for i, conv in enumerate(self.layers):
-                edge_index, _, size = adj
-                x = x_all[n_id]
-                x_target = x[:size[1]]
-                x = conv((x, x_target), edge_index)
-                if i != len(self.layers) - 1:
-                    x = F.relu(x)
-        return x
 
 
 class GCNModule(pl.LightningModule):
@@ -120,6 +105,8 @@ class GCNModule(pl.LightningModule):
         self.f1_score = F1Score(task=task, num_classes=num_classes)
         self.precision_score = Precision(task=task, num_classes=num_classes)
         self.recall_score = Recall(task=task, num_classes=num_classes)
+
+        self.test_probs = None
 
     def forward(self, x: torch.tensor, edge_index: torch.tensor):
         return self.model(x, edge_index)
@@ -165,29 +152,36 @@ class GCNModule(pl.LightningModule):
         self.recall_score(probs, targets.long())
         self.log('val_recall_score', self.recall_score, on_epoch=True, on_step=False, batch_size=batch_size)
         return loss
+    
+    def on_test_start(self) -> None:
+        logging.info('Starting testing...')
+        self.test_probs = self.model.inference(
+            x_all=self.trainer.datamodule.data.x,
+            subgraph_loader=self.trainer.test_dataloaders[0],
+        )
 
     def test_step(self, batch, batch_idx):
-        # targets = batch.y.squeeze(1)[batch.test_mask]
-        # print('!!!', batch)
-        # print('!!!!', self.trainer.datamodule.data)
-        probs = self.model.inference_step(batch, self.trainer.datamodule.data.x)
-        print(probs.shape)
-        # batch_size = len(targets)
+        return 0
+    
+    def on_test_end(self) -> None:
+        targets = self.trainer.datamodule.data.y
+        y_pred = self.test_probs.argmax(dim=-1, keepdim=True)
+ 
+        acc = self.accuracy(y_pred, targets.long())
+        f1_score = self.f1_score(y_pred, targets.long())
+        precision_score = self.precision_score(y_pred, targets.long())
+        recall_score = self.recall_score(y_pred, targets.long())
 
-        # loss = self.criterion(probs, targets)
-        # self.log('test_loss', loss, batch_size=batch_size)
+        self.logger.experiment.log(
+            {
+                'test_acc': acc,
+                'test_f1': f1_score,
+                'test_precision': precision_score,
+                'test_recall_score': recall_score,
+            }
+        )
 
-        # self.accuracy(probs, targets.long())
-        # self.log('test_acc', self.accuracy, batch_size=batch_size)
-
-        # self.f1_score(probs, targets.long())
-        # self.log('test_f1', self.f1_score, batch_size=batch_size)
-
-        # self.precision_score(probs, targets.long())
-        # self.log('test_precision', self.precision_score, batch_size=batch_size)
-
-        # self.recall_score(probs, targets.long())
-        # self.log('test_recall_score', self.recall_score, batch_size=batch_size)
+        # self.logger.experiment.log({"test_acc": acc, "test_f1": f1_score, "test_precision":})
 
     def configure_optimizers(self):
         optimizer = getattr(torch.optim, self.optimizer.name)(
