@@ -46,14 +46,19 @@ python src/train.py --config <path_to_config>
 ```
 
 
-## Solutions
+## **Solutions**
 
-### 0. EDA
+### 0. **EDA**
 
-See [here](notebooks/eda.ipynb).
+See [here](notebooks/eda.ipynb). Key highligths: 
+
+- Number of *vertices*: 2449029 with embeddings dimensionality: 100
+- Number of *edges*: 123718280
+- Number of *classes*: 47
+- Dataset is imbalanced.
 
 
-### 1. Baseline
+### 1. **Baseline**
 
 Multi-layer perceptron trained only on vertices embeddings (169k parameters).
 
@@ -68,11 +73,29 @@ Without using any information of the graph structure we can achieve 64.4% accura
 Config: `src/configs/config_mlp.py`
 
 
-### 2. Graph Convolutional Network
+### 2. **Graph Convolutional Network**
 
-Graph Convolutional Network (169k parameters). Scores:
+Graph Convolutional Network (338k parameters). 
+
+The convolution layer used here is SAGEConv with mean aggregation. This type of convolution can be visualized as follows ([source](https://snap.stanford.edu/graphsage/)):
+
+![sage](images/sample_and_agg.png)
+
+GraphSage is an inductive version of GCNs. It does not require the whole graph during training and it can generalize well to the unseen nodes.
+
+Feature extraction for each vertex is perfomed in 2 stages: 
+
+1. **SA**mpling: sample neihgbour vertices for the current one on different depths;
+
+2. Aggre**G**at**E**: aggregate embeddings of chosen vertices. Agreggation functions can be different, the basic are mean, max/min.
+
+We use mini-batch training because the whole graph is quite large, so full-batch training requires enormous ammount of computing capacity. We use **ClusterSampling** during **training** because it divide initial full graph into multiple subgraphs with algorithm described in "Cluster-GCN: An Efficient Algorithm for Training Deep and Large Graph Convolutional Networks". During testing (or inference) we use only **NeighbourSampling** because we do not need to know the whole graph (or subgraph) for the current node, only its neighbours.
+
+Scores:
 
 TBA
+
+We significantly increase the accuracy of prediction on test set comparing to baseline using graph neural networks. Consequently, the relationship between objects can store very useful information for further research of their properties. 
 
 
 Config: `src/configs/config_gcn.py`
