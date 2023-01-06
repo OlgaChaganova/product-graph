@@ -34,7 +34,7 @@ CONFIG = Config(
         model_params={
             'num_features': [100, 256, 256, 256],
             'num_classes': 47,
-            'dropout': 0.5,
+            'dropout': 0.15,
         },
     ),
 
@@ -47,7 +47,7 @@ CONFIG = Config(
             'gradient_clip_val': 0.0,
             'benchmark': True,
             'precision': 32,
-            'max_epochs': 100,
+            'max_epochs': 200,
             'auto_lr_find': None,
         },
 
@@ -66,16 +66,16 @@ CONFIG = Config(
             name='Adam',
             opt_params={
                 'lr': 0.001,
-                # 'weight_decay': 0.0001,
+                'weight_decay': 0.0001,
             },
         ),
 
         lr_scheduler=LRScheduler(
             name='CosineAnnealingWarmRestarts',
             lr_sched_params={
-                'T_0': 100,
+                'T_0': 200,
                 'T_mult': 1,
-                'eta_min': 0.0001,
+                'eta_min': 0.00001,
             },
         ),
 
