@@ -13,7 +13,7 @@ RUN_NAME = 'gcn_' + uuid.uuid4().hex[:6]  # unique run id
 
 CONFIG = Config(
     project=Project(
-        log_freq=500,
+        log_freq=10,
         project_name='OGBN Product',
         run_name=RUN_NAME,
         tags='gcn',
@@ -34,7 +34,7 @@ CONFIG = Config(
         model_params={
             'num_features': [100, 256, 256, 256],
             'num_classes': 47,
-            'dropout': 0.15,
+            'dropout': 0.5,
         },
     ),
 
@@ -47,7 +47,7 @@ CONFIG = Config(
             'gradient_clip_val': 0.0,
             'benchmark': True,
             'precision': 32,
-            'max_epochs': 500,
+            'max_epochs': 100,
             'auto_lr_find': None,
         },
 
@@ -66,16 +66,16 @@ CONFIG = Config(
             name='Adam',
             opt_params={
                 'lr': 0.001,
-                'weight_decay': 0.0001,
+                # 'weight_decay': 0.0001,
             },
         ),
 
         lr_scheduler=LRScheduler(
             name='CosineAnnealingWarmRestarts',
             lr_sched_params={
-                'T_0': 500,
+                'T_0': 100,
                 'T_mult': 1,
-                'eta_min': 0.00001,
+                'eta_min': 0.0001,
             },
         ),
 

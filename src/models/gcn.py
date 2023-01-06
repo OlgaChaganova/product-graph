@@ -152,7 +152,7 @@ class GCNModule(pl.LightningModule):
         self.recall_score(probs, targets.long())
         self.log('val_recall_score', self.recall_score, on_epoch=True, on_step=False, batch_size=batch_size)
         return loss
-    
+
     def on_test_start(self) -> None:
         logging.info('Starting testing...')
         self.test_probs = self.model.inference(
@@ -162,11 +162,11 @@ class GCNModule(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         return 0
-    
+
     def on_test_end(self) -> None:
         targets = self.trainer.datamodule.data.y
         y_pred = self.test_probs.argmax(dim=-1, keepdim=True)
- 
+
         acc = self.accuracy(y_pred, targets.long())
         f1_score = self.f1_score(y_pred, targets.long())
         precision_score = self.precision_score(y_pred, targets.long())
@@ -180,8 +180,6 @@ class GCNModule(pl.LightningModule):
                 'test_recall_score': recall_score,
             }
         )
-
-        # self.logger.experiment.log({"test_acc": acc, "test_f1": f1_score, "test_precision":})
 
     def configure_optimizers(self):
         optimizer = getattr(torch.optim, self.optimizer.name)(

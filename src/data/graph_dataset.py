@@ -9,7 +9,7 @@ from torch_geometric.loader import ClusterLoader, ClusterData, NeighborSampler
 
 class OGBGProductsDatamodule(pl.LightningDataModule):
     """DataModule for mini-batch GCN training using the Cluster-GCN algorithm."""
-    
+
     def __init__(
         self,
         root: str,
@@ -45,7 +45,7 @@ class OGBGProductsDatamodule(pl.LightningDataModule):
         self.data = None
         self.split_idx = None
         self.cluster_data = None
-    
+
     def prepare_data(self):
         dataset = PygNodePropPredDataset(name='ogbn-products', root=self.root)
         self.split_idx = dataset.get_idx_split()
