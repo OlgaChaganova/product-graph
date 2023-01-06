@@ -47,7 +47,7 @@ CONFIG = Config(
             'gradient_clip_val': 0.0,
             'benchmark': True,
             'precision': 32,
-            'max_epochs': 20,
+            'max_epochs': 500,
             'auto_lr_find': None,
         },
 
@@ -73,7 +73,7 @@ CONFIG = Config(
         lr_scheduler=LRScheduler(
             name='CosineAnnealingWarmRestarts',
             lr_sched_params={
-                'T_0': 120,
+                'T_0': 500,
                 'T_mult': 1,
                 'eta_min': 0.00001,
             },
