@@ -64,7 +64,7 @@ Multi-layer perceptron trained only on vertices embeddings (169k parameters).
 
 This solution does not take into account any information about relations between vertices so there is no graph-specific approaches are used. We can even consider this baseline as NLP task because vertices embeddings were extracted with BOW-method.
 
-Scores:
+**Scores:**
 
 ![mlp_metrics](images/mlp-metrics.png)
 
@@ -77,11 +77,13 @@ Config: `src/configs/config_mlp.py`
 
 Graph Convolutional Network (338k parameters). 
 
-The convolution layer used here is SAGEConv with mean aggregation. This type of convolution can be visualized as follows ([source](https://snap.stanford.edu/graphsage/)):
+The convolution layer used here is SAGEConv with mean aggregation. This type of convolution can be visualized as follows ([source](https://arxiv.org/pdf/1706.02216.pdf)):
 
 ![sage](images/sample_and_agg.png)
 
-GraphSage is an inductive version of GCNs. It does not require the whole graph during training and it can generalize well to the unseen nodes.
+GraphSage is an *inductive* version of GCNs. It does not require the whole graph during training and it can generalize well to the unseen nodes. So this is the most suitable choice for dynamic graphs.
+
+As other graph neural network architectuers it assumes that neighbor vertices have similar embeddings and properties. 
 
 Feature extraction for each vertex is perfomed in 2 stages: 
 
@@ -89,9 +91,9 @@ Feature extraction for each vertex is perfomed in 2 stages:
 
 2. Aggre**G**at**E**: aggregate embeddings of chosen vertices. Agreggation functions can be different, the basic are mean, max/min.
 
-We use mini-batch training because the whole graph is quite large, so full-batch training requires enormous ammount of computing capacity. We use **ClusterSampling** during **training** because it divide initial full graph into multiple subgraphs with algorithm described in "Cluster-GCN: An Efficient Algorithm for Training Deep and Large Graph Convolutional Networks". During testing (or inference) we use only **NeighbourSampling** because we do not need to know the whole graph (or subgraph) for the current node, only its neighbours.
+We use mini-batch training because the whole graph is quite large, so full-batch training requires enormous ammount of computing capacity. We use **ClusterSampling** during **training** because it divide initial full graph into multiple subgraphs with algorithm described in *"Cluster-GCN: An Efficient Algorithm for Training Deep and Large Graph Convolutional Networks"*. During testing (or inference) we use only **NeighbourSampling** because we do not need to know the whole graph (or subgraph) for the current node, only its neighbours.
 
-Scores:
+**Scores:**
 
 ![gcn_metrics](images/gcn-metrics.png)
 
@@ -100,3 +102,18 @@ We significantly increase (+14.2%) the accuracy of prediction on test set compar
 
 
 Config: `src/configs/config_gcn.py`
+
+
+### 3. **Graph Convolutional Network + loss for imbalanced data**
+
+EDA showed that dataset is highly imbalanced: the largest class contains almost 700k objects while the smallest one contains less than 10k objects. We can try to handle this problem using special type of losses, e.g. FocalLoss. The model architecture is the same as in p.2 but now we use FocalLoss for training.
+
+**Scores:**
+
+TBA
+
+
+Config: `src/configs/config_gcn.py`. To run this experiment: 
+```
+python src/train.py --config src/configs/config_gcn.py --loss focal
+```
