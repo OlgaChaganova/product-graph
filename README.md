@@ -110,8 +110,9 @@ EDA showed that dataset is highly imbalanced: the largest class contains almost 
 
 **Scores:**
 
-TBA
+![gcn__focal_metrics](images/gcn-focal-metrics.png)
 
+But we can see that using FocalLoss instead of CrossEntropyLoss only resulted in a lower metric.
 
 Config: `src/configs/config_gcn.py`. To run this experiment: 
 ```
