@@ -6,6 +6,7 @@ from runpy import run_path
 
 import pytorch_lightning as pl
 import wandb
+from kornia.losses.focal import FocalLoss
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.callbacks import RichModelSummary
 from pytorch_lightning.callbacks.progress import TQDMProgressBar
@@ -41,6 +42,13 @@ def parse() -> tp.Any:
         type=str,
         help='Path to experiment config file (*.py)',
     )
+    parser.add_argument(
+        '--loss',
+        default='bce',
+        type=str,
+        choices=['bce', 'focal'],
+        help='Loss type',
+    )
     return parser.parse_args()
 
 
@@ -51,6 +59,10 @@ def main(args: tp.Any, config: Config):
         optimizer=config.train.optimizer,
         lr_scheduler=config.train.lr_scheduler,
     )
+
+    if args.loss == 'focal':
+        model.criterion = FocalLoss(alpha=1, gamma=2, reduction='mean')
+        logging.info('Using FocalLoss')
 
     # data module
     datamodule = config.dataset.module(
